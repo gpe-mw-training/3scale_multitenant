@@ -1,0 +1,11 @@
+~lock.*
+*.swp
+*.nogit/
+.DS_Store
+*.ini
+*.classpath
+*.project
+*.settings/
+build.metadata
+.metadata
+target/

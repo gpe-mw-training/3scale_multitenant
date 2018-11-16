@@ -1,0 +1,143 @@
+:scrollbar:
+:data-uri:
+:toc2:
+:linkattrs:
+
+= 3scale-multitenant
+
+:numbered:
+
+== Overview
+
+This workload provisions a single centralized 3scale API Manager in a single OCP namespace called: 3scale-mt-{{ocp_amp_admin_username}}.
+
+This workload only needs to be executed once per OCP cluster.
+
+It also allows for management (ie: creation / deletion) of a configurable number of API _tenants_ in the 3scale API Manager installation.
+
+This role might be valuable in the following circumstances:
+
+. *Instructor Led Training (ILTs), Hackathons and workshops*:
++
+Given X number of students in an ILT requiring 3scale, provision a single central multi-tenant Red Hat 3scale API Manager where each student is assigned their own tenant.
++
+The student is provided with administrative credentials to their assigned tenant.
++
+This approach might be more desirable than the alternative where each student provisions their own 3scale API Manager.
+
+. *Red Hat 3scale enablement*
++
+A few learning objectives might be:
+
+.. Demonstrate the provisioning of 3scale on OCP.
+.. Integration with an external smtp provider to send out emails and facilitate a user self-registration workflow.
+.. Invocation of the REST Admin API of 3scale using OAuth2 _access_ and _refresh_ tokens.
+
+=== Prerequisites and assumptions
+
+. Using a version of oc utility that corresponds to your target OCP cluster, ensure oc utility is already authenticated as the cluster-admin:   opentlc-mgr
+. This workload requires installation of xmlstarlet on target host executing this ansible
+. Resource utilization: _is_shared_cluster = true_
+.. The cluster quota for both CPU and RAM is set fairly high by default:
+... CPU limit:  30 cores
+... RAM limit:  30 Gi
+.. The cpu and RAM limits defined in the 3scale API Manager template are also set fairly high. 
+.. These default settings are set intentionally high to allow for high throughput
+. Resource utilization: _is_shared_cluster = false_
++
+The resources need to provision 3scale drops down to about 12 Gi RAM and 8 CPU
+
+== 3scale Deployment
+
+=== Environment Variables
+
+-----
+# Update the following:
+$ echo "export ocp_amp_admin_username=amp0" >> ~/.bashrc
+
+# Execute the following:
+$ source ~/.bashrc
+
+
+# Copy-n-paste the following:
+SUBDOMAIN_BASE=`oc whoami --show-server | cut -d'.' -f 2,3,4,5 | cut -d':' -f 1`
+
+-----
+
+=== Ansible Set-up
+
+. Install this role locally
++
+-----
+$ ansible-galaxy install jbride.3scale-multitenant
+-----
+
+. Create Playbook:
++
+-----
+$ echo "
+- hosts: all
+  become: false
+  gather_facts: False
+  vars_files:
+  roles:
+    - jbride.3scale-multitenant
+" > /tmp/3scale_multitenant.yml
+-----
+
+=== Provision 3scale API manager
+
+The OCP namespace for 3scale multi-tenant app will be owned by the following user: {{ocp_amp_admin_username}}.
+
+{{ocp_amp_admin_username}} will be assigned a clusterquota so as to manage limits and requests assigned to 3scale
+
+. Execute:
++
+-----
+
+# API manager provision
+ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
+                    -e"ACTION=create" \
+                    -e"subdomain_base=$SUBDOMAIN_BASE" \
+                    -e"ocp_amp_admin_username=$ocp_amp_admin_username" \
+                    -e"is_shared_cluster=true"
+-----
+
+
+=== Tenant management
+
+This workload can optionally create multiple tenants in this single multi-tenant 3scale.  If so then ensure the following when invoking this ansible:
+
+. specify ACTION = "tenant_mgmt"
+. specify "start_tenant" and "end_tenant" variables
+. set value of CREATE_GWS_WITH_EACH_TENANT (true / false) to automate provisioning of a staging and production GW for each tenant
+
+
+-----
+START_TENANT=1
+END_TENANT=1
+CREATE_GWS_WITH_EACH_TENANT=true
+
+# Tenant Management
+ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
+                    -e"ANSIBLE_REPO_PATH=`pwd`" \
+                    -e"ocp_workload=${WORKLOAD}" \
+                    -e"ACTION=tenant_mgmt" \
+                    -e"start_tenant=$START_TENANT" \
+                    -e"end_tenant=$END_TENANT" \
+                    -e"subdomain_base=$SUBDOMAIN_BASE" \
+                    -e"create_gws_with_each_tenant=$CREATE_GWS_WITH_EACH_TENANT" \
+                    -e"ocp_amp_admin_username=$ocp_amp_admin_username"
+-----
+
+
+=== Delete 3scale API manager
+
+-----
+REMOVE_TENANTS_ONLY=true
+ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
+                    -e"ACTION=remove" \
+                    -e"subdomain_base=$SUBDOMAIN_BASE" \
+                    -e"REMOVE_TENANTS_ONLY=$REMOVE_TENANTS_ONLY" \
+                    -e"ocp_amp_admin_username=$ocp_amp_admin_username"
+-----
