@@ -10,19 +10,23 @@
 
 - block:
     - name: "{{tenantAdminId}}      1)  **********   TENANT CREATION  **********"
+      set_fact:
+        tenantAdminEmail: "{{adminEmailUser}}%2B{{item}}%40{{adminEmailDomain}}"
+    - debug:
+        msg: "{{tenantAdminId}} tenantAdminEmail = {{tenantAdminEmail}}" 
 
       # NOTE:  As of 3scale 2.2, this operation is not idempotent.
       #        It creates a new tenant given the same parameters.
       #        Public and Admin domains of these tenants are different; ie:
       #         user1-3scale-mt-amp0-3-admin.apps.3295.openshift.opentlc.com 
       #         user1-3scale-mt-amp0-2-admin.apps.3295.openshift.opentlc.com
-      uri:
+    - uri:
         url: "{{create_tenant_url}}"
         method: POST
         headers:
           Content-Type: "application/x-www-form-urlencoded"
-        body: "access_token={{master_access_token}}&org_name={{orgName}}&username={{tenantAdminId}}&password={{tenantAdminPasswd}}&email={{tenantAdminId}}%40{{ocp_apps_domain}}"
-        timeout: 10
+        body: "access_token={{master_access_token}}&org_name={{orgName}}&username={{tenantAdminId}}&password={{tenantAdminPasswd}}&email={{tenantAdminEmail}}"
+        timeout: 20
         status_code: 201
         return_content: yes
       register: create_tenant_response
@@ -79,6 +83,13 @@
       command: "oc create route edge {{orgName}}-developer --service=system-developer --hostname={{orgName}}.{{ocp_apps_domain}} -n {{ocp_project}}"
       register: create_sys_developer_route
       failed_when: create_sys_developer_route.stderr != "" and 'AlreadyExists' not in create_sys_developer_route.stderr
+
+    - name: "{{tenantAdminId}}  8) Populate {{tenant_output_dir}}/{{tenant_provisioning_results_file}}"
+      lineinfile: 
+        line: "{{tenantAdminId}}\t{{ocp_user_passwd}}\t{{orgName}}-admin.{{ocp_apps_domain}}\t{{tenantAdminId}}\t{{tenantAdminPasswd}}\t{{tenant_access_token.matches[0].value}}"
+        path: "{{tenant_output_dir}}/{{tenant_provisioning_results_file}}"
+        create: yes
+        state: present
 
   when: create_tenants|bool
 

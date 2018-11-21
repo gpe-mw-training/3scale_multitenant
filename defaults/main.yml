@@ -51,12 +51,17 @@ master_access_token: wtqhhsly
 new_app_output_dir: "{{ lookup('env','HOME') }}/provisioning_output/{{subdomain_base}}"
 new_app_output: "{{new_app_output_dir}}/{{ocp_project}}-out.log"
 
+# smtp
+smtp_host: "smtp.sendgrid.net"
+smtp_userid: changeme
+smtp_passwd: changeme
+
 
 
 ######   new tenants    #######
 create_gws_with_each_tenant: "true"
 
-tenant_output_dir: "/{{new_app_output_dir}}/3scale_tenants_{{ocp_amp_admin_username}}"
+tenant_output_dir: "{{new_app_output_dir}}/3scale_tenants_{{ocp_amp_admin_username}}"
 tenant_provisioning_log_file: "{{ocp_amp_admin_username}}_tenant_provisioning.log"
 start_tenant: 1
 end_tenant: 1

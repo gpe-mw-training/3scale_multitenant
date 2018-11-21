@@ -36,7 +36,6 @@ A few learning objectives might be:
 === Prerequisites and assumptions
 
 . Using a version of oc utility that corresponds to your target OCP cluster, ensure oc utility is already authenticated as the cluster-admin:   opentlc-mgr
-. This workload requires installation of xmlstarlet on target host executing this ansible
 . This workload requires installation of the lxml python module on target host executing this ansible. ie:
 +
 -----
@@ -53,10 +52,18 @@ A few learning objectives might be:
 +
 The resources need to provision 3scale drops down to about 12 Gi RAM and 8 CPU
 
+. smtp provider
++
+You'll want to have registered with an smtp provider to enable the 3scale API Manager with the ability to send emails.
++
+A recommended, zero-cost smtp provider is:   link:https://www.sendgrid.com[sendgrid].
+SendGrid's zero-cost membership allows for a genereous number of outbound emails that meet the needs of a typical enablement training.
+
 === TO-DOs
 
 . Configure smtp configmap to enable outbound emails from AMP
 . Implement tenant deletion
+. fix REDIS_URL in gateways
 
 == 3scale Deployment
 
@@ -68,6 +75,17 @@ $ echo "export ocp_amp_admin_username=amp0" >> ~/.bashrc
 
 # Execute the following:
 $ source ~/.bashrc
+
+
+# SMTP Configurations to enable API Manager to send emails
+$ smtp_host=smtp.sendgrid.net
+$ smtp_port=587
+$ smtp_authentication=plain
+$ smtp_userid=<change me>
+$ smtp_passwd=<change me>
+$ adminEmailUser=<change me>            #   ie:  jdoe
+$ adminEmailDomain=<change me>          #   ie:  redhat.coom
+
 
 
 # Copy-n-paste the following:
@@ -111,6 +129,11 @@ $ ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
                     -e"ACTION=create" \
                     -e"subdomain_base=$SUBDOMAIN_BASE" \
                     -e"ocp_amp_admin_username=$ocp_amp_admin_username" \
+                    -e"smtp_port=$smtp_port" \
+                    -e"smtp_authentication=$smtp_authentication" \
+                    -e"smtp_host=$smtp_host" \
+                    -e"smtp_userid=$smtp_userid" \
+                    -e"smtp_passwd=$smtp_passwd" \
                     -e"is_shared_cluster=true"
 -----
 
@@ -138,6 +161,8 @@ $ ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
                     -e"start_tenant=$START_TENANT" \
                     -e"end_tenant=$END_TENANT" \
                     -e"create_tenants=$CREATE_TENANTS" \
+                    -e"adminEmailUser=$adminEmailUser" \
+                    -e"adminEmailDomain=$adminEmailDomain" \
                     -e"create_gws_with_each_tenant=$CREATE_GWS_WITH_EACH_TENANT"
 -----
 
