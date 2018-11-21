@@ -140,11 +140,11 @@ $ ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
 
 === Tenant management
 
-This workload can optionally create multiple tenants in this single multi-tenant 3scale.  If so then ensure the following when invoking this ansible:
+. This workload can optionally create multiple tenants in this single multi-tenant 3scale.  If so then ensure the following when invoking this ansible:
 
-. specify ACTION = "tenant_mgmt"
-. specify "start_tenant" and "end_tenant" variables
-. set value of CREATE_GWS_WITH_EACH_TENANT (true / false) to automate provisioning of a staging and production GW for each tenant
+.. specify ACTION = "tenant_mgmt"
+.. specify "start_tenant" and "end_tenant" variables
+.. set value of CREATE_GWS_WITH_EACH_TENANT (true / false) to automate provisioning of a staging and production GW for each tenant
 
 
 -----
@@ -165,6 +165,26 @@ $ ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
                     -e"adminEmailDomain=$adminEmailDomain" \
                     -e"create_gws_with_each_tenant=$CREATE_GWS_WITH_EACH_TENANT"
 -----
+
+. After the tenant provisioning completes, you will see messages similar to the following at the end of the ansible standard out:
++
+-----
+ok: [localhost] => {
+    "msg": [
+        "tenant_output_dir:  /home/jbride/provisioning_output/3295.openshift.opentlc.com/3scale_tenants_amp0",
+        "tenant_provisioning_log_file = /home/jbride/provisioning_output/3295.openshift.opentlc.com/3scale_tenants_amp0/amp0_tenant_provisioning.log",
+        "tenant_provisioning_results_file = /home/jbride/provisioning_output/3295.openshift.opentlc.com/3scale_tenants_amp0/amp0_tenant_info_file_1_2.txt",
+        "start and end tenants = 1  2",
+        "create API Gateways for each tenant = true"
+    ]
+}
+-----
++
+Feel free to review the files mentioned in those output messages.
+
+. The _tenant_provisioning_results_file_ is particularly important to share details about API tenants with students.
++
+This is a tab delimited file that can be imported into Google Spreadsheets and made accessible to students.
 
 
 === Delete 3scale API manager
