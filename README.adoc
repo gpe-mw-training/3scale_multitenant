@@ -9,7 +9,7 @@
 
 == Overview
 
-This workload provisions a single centralized 3scale API Manager in a single OCP namespace called: 3scale-mt-{{ocp_amp_admin_username}}.
+This workload provisions a single centralized 3scale API Manager in a single OCP namespace called: 3scale-mt-{{ocp_amp_admin_prefix}}.
 
 This workload only needs to be executed once per OCP cluster.
 
@@ -71,7 +71,7 @@ SendGrid's zero-cost membership allows for a genereous number of outbound emails
 
 -----
 # Update the following:
-$ echo "export ocp_amp_admin_username=amp0" >> ~/.bashrc
+$ echo "export ocp_amp_admin_prefix=amp0" >> ~/.bashrc
 
 # Execute the following:
 $ source ~/.bashrc
@@ -116,9 +116,9 @@ $ echo "
 
 === Provision 3scale API manager
 
-The OCP namespace for 3scale multi-tenant app will be owned by the following user: {{ocp_amp_admin_username}}.
+The OCP namespace for 3scale multi-tenant app will be owned by the following user: {{ocp_amp_admin_prefix}}.
 
-{{ocp_amp_admin_username}} will be assigned a clusterquota so as to manage limits and requests assigned to 3scale
+{{ocp_amp_admin_prefix}} will be assigned a clusterquota so as to manage limits and requests assigned to 3scale
 
 . Execute:
 +
@@ -128,7 +128,7 @@ The OCP namespace for 3scale multi-tenant app will be owned by the following use
 $ ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
                     -e"ACTION=create" \
                     -e"subdomain_base=$SUBDOMAIN_BASE" \
-                    -e"ocp_amp_admin_username=$ocp_amp_admin_username" \
+                    -e"ocp_amp_admin_prefix=$ocp_amp_admin_prefix" \
                     -e"smtp_port=$smtp_port" \
                     -e"smtp_authentication=$smtp_authentication" \
                     -e"smtp_host=$smtp_host" \
@@ -157,7 +157,7 @@ CREATE_GWS_WITH_EACH_TENANT=true            :   if set to true, then an API gate
 $ ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
                     -e"ACTION=tenant_mgmt" \
                     -e"subdomain_base=$SUBDOMAIN_BASE" \
-                    -e"ocp_amp_admin_username=$ocp_amp_admin_username" \
+                    -e"ocp_amp_admin_prefix=$ocp_amp_admin_prefix" \
                     -e"start_tenant=$START_TENANT" \
                     -e"end_tenant=$END_TENANT" \
                     -e"create_tenants=$CREATE_TENANTS" \
@@ -195,5 +195,5 @@ $ ansible-playbook -i localhost, -c local /tmp/3scale_multitenant.yml \
                     -e"ACTION=remove" \
                     -e"subdomain_base=$SUBDOMAIN_BASE" \
                     -e"REMOVE_TENANTS_ONLY=$REMOVE_TENANTS_ONLY" \
-                    -e"ocp_amp_admin_username=$ocp_amp_admin_username"
+                    -e"ocp_amp_admin_prefix=$ocp_amp_admin_prefix"
 -----
