@@ -13,7 +13,7 @@
   changed_when: false
 
 - fail:
-    msg: "User does not have cluster-admin rights to install Istio"
+    msg: "User does not have cluster-admin rights"
   when: default_project_result is failed
 
 - name: check if API Manager deployed
@@ -27,7 +27,7 @@
   when: api_project_result is failed
 
 - name: "Label namespace"
-  command: "oc label namespace {{ocp_project}} AAD='{{ocp_amp_admin_prefix}}'"
+  command: "oc label namespace {{ocp_project}} AAD='{{ocp_amp_admin_id}}'"
   when: api_project_result is failed
 
 - name: Make sure we go back do default project
@@ -44,12 +44,54 @@
     threescale_template: "{{threescale_template_dedicated}}"
   when: not is_shared_cluster|bool
 
+- name: Ensure {{work_dir}} exists
+  file:
+    path: "{{work_dir}}"
+    state: directory
+
+- name: Delete default limitrange
+  shell: |
+    oc delete limitrange {{ocp_project}}-core-resource-limits -n {{ocp_project}}
+  ignore_errors: true
+
+- name: Create a new limitrange
+  template:
+    src: templates/limitrange.yaml
+    dest: "{{work_dir}}/limitrange.yaml"
+- shell: |
+    oc create -f {{work_dir}}/limitrange.yaml -n {{ocp_project}}
+
 - name: "Download {{ threescale_template }}"
   get_url:
     url: "{{ threescale_template }}"
     dest: "{{modified_template_path}}"
     force: yes
   when: api_project_result is failed
+
+- name: Place all deployments in a paused state
+  replace:
+    path: "{{ modified_template_path }}"
+    regexp: '(replicas: 1\n)'
+    replace: '\1    paused: true\n'
+
+- block:
+    - name: Reduce RAM resource limit on _redis_ databases
+      command: sed -i 's/32Gi/2Gi/' "{{modified_template_path}}"
+
+    - name: Reduce CPU resource limits and requests across all deployments
+      replace:
+        path: "{{ modified_template_path }}"
+        regexp: '(cpu: 500m)'
+        replace: 'cpu: 250m'
+    - replace:
+        path: "{{ modified_template_path }}"
+        regexp: '(cpu: 1\n)'
+        replace: 'cpu: 300m'
+    - replace:
+        path: "{{ modified_template_path }}"
+        regexp: '(cpu: 2\n)'
+        replace: 'cpu: 300m'
+  when: not is_shared_cluster|bool
 
 
 - name: Process the OpenShift Template and create the OpenShift objects for the 3scale API Management Platform
@@ -130,7 +172,6 @@
 - name: "Resume {{with_items}}"
   command: oc rollout resume dc/"{{ item }}" -n "{{ ocp_project }}"
   with_items:
-    - system-resque
     - system-sidekiq
     - system-sphinx
     - backend-cron
@@ -138,7 +179,6 @@
 - include_tasks: wait_for_deploy.yml
   vars:
     pod_to_wait:
-      - system-resque
       - system-sidekiq
       - system-sphinx
       - backend-cron
@@ -174,7 +214,7 @@
   when: api_project_result is failed
 
 - name: Annotate the empty project as requested by user
-  shell: "oc annotate namespace {{ocp_project}} openshift.io/requester={{ocp_amp_admin_prefix}} --overwrite"
+  shell: "oc annotate namespace {{ocp_project}} openshift.io/requester={{ocp_amp_admin_id}} --overwrite"
 ###################################################################
 
 

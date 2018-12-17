@@ -1,10 +1,10 @@
 ---
 
 # - name: Add user to developer group (allowed to create projects)
-#   shell: "oadm groups add-users {{item}} {{ocp_amp_admin_prefix}}"
+#   shell: "oadm groups add-users {{item}} {{ocp_amp_admin_id}}"
 #   register: groupadd_register
 #   with_items: "{{ocp_user_groups}}"
-#   when: ocp_amp_admin_prefix is defined and ocp_user_groups is defined
+#   when: ocp_amp_admin_id is defined and ocp_user_groups is defined
 #
 # - name: test that command worked
 #   debug:
@@ -13,8 +13,8 @@
 
 - name: Create user Quota - clusterresourcequota
   shell: |
-        oc create clusterquota clusterquota-"{{ocp_amp_admin_prefix}}-{{ocp_project}}" \
-        --project-annotation-selector=openshift.io/requester="{{ocp_amp_admin_prefix}}" \
+        oc create clusterquota clusterquota-"{{ocp_amp_admin_id}}" \
+        --project-annotation-selector=openshift.io/requester="{{ocp_amp_admin_id}}" \
         --hard requests.cpu="{{quota_requests_cpu}}" \
         --hard limits.cpu="{{quota_limits_cpu}}"  \
         --hard requests.memory="{{quota_requests_memory}}" \
